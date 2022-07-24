@@ -44,16 +44,16 @@ task reportsAndStuff(dependsOn: [
 
 task copyReports(type: Copy){
     dependsOn reportsAndStuff
-    from 'build/reports'
-    into 'build/tmp/website'
+    from 'src/main/html/'
+    into 'reports/'
     description = "Copy reports to \"website\" directory."
     
 }
 
 task copyDocumentation(type: Copy){
     dependsOn reportsAndStuff
-    from 'build/docs'
-    into 'build/tmp/website'
+    from 'build/docs/'
+    into 'build/reports/javadoc/'
     description = "Copy Javadoc output to \"website\" directory."
 }
 

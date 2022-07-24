@@ -7,16 +7,22 @@
 //build.gradle
 
 plugins {
-    id 'java'
+   id 'java'
+   // Apply the application plugin to add support for building a CLI application in Java.
+   id 'application'
+   // Plugin to work with git
+   id "org.xbib.gradle.plugin.git" version "2.0.0"
 }
 
 java {
     sourceCompatibility = JavaVersion.toVersion(11)
     targetCompatibility = JavaVersion.toVersion(11)
 }
+
 repositories {
     jcenter()
 }
+
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
@@ -25,38 +31,61 @@ dependencies {
 test {
     ignoreFailures = true
     useJUnitPlatform()
-    reports {html.required = true}
-    testLogging {
-        events "passed", "failed", "skipped"//, "standardOut", "standardErr"
+}
+
+////// Copy to Website //////
+
+task clonePages() {
+    doLast {
+        mkdir 'build/gh-pages'
+        def thisRepo = "git@github.com:flin002/CI-Assignment.git"
+        def pagesDir = "$buildDir/gh-pages"
+        project.delete {
+            delete pagesDir
+        }
+        def grgit = git.clone {
+            dir = pagesDir
+            uri = thisRepo
+            bare = false
+            refToCheckout = 'gh-pages'
+        }
+        grgit.checkout {
+            branch = 'gh-pages'
+        }
+        grgit.close()
     }
-    //finalized by jacocoTestReport
 }
 
-javadoc {
-    failOnError false
+task reports (dependsOn: ['test', 'javadoc', 'clonePages']) {
+    doLast {
+        // copy the build/docs/ directory, and all its contents, to the docs/ directory in your gh-pages branch.
+        ant.copy (todir: 'build/gh-pages/docs') {
+            fileset(dir: 'build/docs')
+        }
+        // copy the build/reports/ directory, and all its contents, to the reports/ directory in your gh-pages branch.  
+        ant.copy (todir: 'build/gh-pages/reports') {
+            fileset(dir: 'build/reports')
+        }
+    }
 }
 
-task reportsAndStuff(dependsOn: [
-"test", 
-"javadoc"]){
-    description = "Generate reports and stuff"
-}
-
-task copyReports(type: Copy){
-    dependsOn reportsAndStuff
-    from 'src/main/html/'
-    into 'reports/'
-    description = "Copy reports to \"website\" directory."
-    
-}
-
-task copyDocumentation(type: Copy){
-    dependsOn reportsAndStuff
-    from 'build/docs/'
-    into 'build/reports/javadoc/'
-    description = "Copy Javadoc output to \"website\" directory."
-}
-
-task deployReports (dependsOn: ["copyReports", "copyDocumentation"]){
-    description = "Copy all reports and documentation to \"website\" directory."
+task deployReports (dependsOn: 'reports') {
+    group = "Reporting"
+    description  'Copies reports to the gh-pages branch in preparation for a future push to GitHub'
+    // commit all changes to your gh-pages branch.
+    doLast {
+        def pagesDir = "$buildDir/gh-pages"
+        def grgit = git.open {
+            dir = pagesDir + "/.git"
+        }
+        grgit.add (update: false, patterns: ['reports/'])
+        grgit.add (update: true, patterns: ['reports/'])
+        grgit.add (update: false, patterns: ['docs/'])
+        grgit.add (update: true, patterns: ['docs/'])
+        grgit.commit {
+            message = "Updating web pages"
+        }
+        grgit.push {}
+        grgit.close()
+    }
 }

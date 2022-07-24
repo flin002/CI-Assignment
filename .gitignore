@@ -20,15 +20,16 @@
 *.rar
 
 # Ignore the following:
-.project
-.classpath
-.vscode/
+*.project
+*.classpath
+*.vscode/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
 #ignore bin directory
 bin/
+*.bin
 
 #ignore build directory
 build/
@@ -38,6 +39,8 @@ target/
 target/*
 /target/**
 
+*.build
+
 
 
 # Ignore Gradle project-specific cache directory
@@ -45,3 +48,5 @@ target/*
 
 # Ignore Gradle build output directory
 /build/
+
+*.gitattributes
